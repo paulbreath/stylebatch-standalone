@@ -14,99 +14,116 @@ async function migrate() {
 
     console.log('✅ Connected to database');
 
-    // Create tables manually
+    // Drop existing tables (in reverse order due to foreign keys)
+    await connection.execute(`DROP TABLE IF EXISTS conversion_tasks`);
+    await connection.execute(`DROP TABLE IF EXISTS batch_tasks`);
+    await connection.execute(`DROP TABLE IF EXISTS user_quotas`);
+    await connection.execute(`DROP TABLE IF EXISTS users`);
+    console.log('✅ Dropped existing tables');
+
+    // Create tables with camelCase column names to match Drizzle schema
     await connection.execute(`
-      CREATE TABLE IF NOT EXISTS users (
+      CREATE TABLE users (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        open_id VARCHAR(255) UNIQUE,
-        email VARCHAR(255) UNIQUE NOT NULL,
+        email VARCHAR(320) UNIQUE NOT NULL,
         password VARCHAR(255) NOT NULL,
-        name VARCHAR(255),
-        role ENUM('user', 'admin') DEFAULT 'user',
-        login_method VARCHAR(50),
-        last_signed_in TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        INDEX idx_email (email),
-        INDEX idx_open_id (open_id)
+        name TEXT,
+        role ENUM('user', 'admin') DEFAULT 'user' NOT NULL,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+        lastSignedIn TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        INDEX idx_email (email)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
     console.log('✅ Created table: users');
 
     await connection.execute(`
-      CREATE TABLE IF NOT EXISTS user_quotas (
+      CREATE TABLE user_quotas (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        user_id INT NOT NULL,
-        membership_type ENUM('free', 'monthly', 'quarterly', 'yearly', 'enterprise') DEFAULT 'free',
-        membership_expire_at TIMESTAMP NULL,
-        total_quota INT DEFAULT 5,
-        used_quota INT DEFAULT 0,
-        remaining_quota INT DEFAULT 5,
-        addon_quota INT DEFAULT 0,
-        addon_expire_at TIMESTAMP NULL,
-        lifetime_usage INT DEFAULT 0,
-        is_tester BOOLEAN DEFAULT FALSE,
-        tester_quota INT DEFAULT 0,
-        last_reset_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-        INDEX idx_user_id (user_id)
+        userId INT NOT NULL,
+        membershipType ENUM('free', 'monthly', 'quarterly', 'yearly', 'enterprise') DEFAULT 'free' NOT NULL,
+        membershipExpireAt TIMESTAMP NULL,
+        totalQuota INT DEFAULT 5 NOT NULL,
+        usedQuota INT DEFAULT 0 NOT NULL,
+        remainingQuota INT DEFAULT 5 NOT NULL,
+        addonQuota INT DEFAULT 0 NOT NULL,
+        addonExpireAt TIMESTAMP NULL,
+        lifetimeUsage INT DEFAULT 0 NOT NULL,
+        isTester BOOLEAN DEFAULT FALSE NOT NULL,
+        testerQuota INT DEFAULT 0 NOT NULL,
+        lastResetAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+        FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
+        INDEX idx_user_id (userId)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
     console.log('✅ Created table: user_quotas');
 
     await connection.execute(`
-      CREATE TABLE IF NOT EXISTS conversion_tasks (
+      CREATE TABLE batch_tasks (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        user_id INT NOT NULL,
-        batch_task_id INT NULL,
-        original_image_url TEXT NOT NULL,
-        converted_image_url TEXT,
-        original_file_name VARCHAR(255),
-        style_type ENUM('preset', 'custom', 'reference') DEFAULT 'preset',
-        style_preset VARCHAR(100),
-        style_description TEXT,
-        reference_image_url TEXT,
-        api_provider ENUM('volcengine', 'replicate', 'gemini', 'seedream', 'nanoBanana') DEFAULT 'volcengine',
-        status ENUM('pending', 'processing', 'completed', 'failed') DEFAULT 'pending',
-        error_message TEXT,
-        cost_amount DECIMAL(10, 4) DEFAULT 0,
-        processing_time INT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-        INDEX idx_user_id (user_id),
-        INDEX idx_batch_task_id (batch_task_id),
+        userId INT NOT NULL,
+        totalImages INT DEFAULT 0 NOT NULL,
+        completedImages INT DEFAULT 0 NOT NULL,
+        failedImages INT DEFAULT 0 NOT NULL,
+        styleType ENUM('preset', 'custom', 'reference') NOT NULL,
+        stylePreset VARCHAR(100),
+        styleDescription TEXT,
+        referenceImageUrl TEXT,
+        referenceImageKey VARCHAR(500),
+        strength FLOAT DEFAULT 0.75 NOT NULL,
+        preserveTransparency INT DEFAULT 0 NOT NULL,
+        apiProvider ENUM('volcengine', 'replicate', 'gemini', 'seedream', 'nanoBanana') DEFAULT 'volcengine' NOT NULL,
+        status ENUM('pending', 'processing', 'completed', 'failed') DEFAULT 'pending' NOT NULL,
+        totalCost DECIMAL(10, 4) DEFAULT 0 NOT NULL,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+        FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
+        INDEX idx_user_id (userId),
         INDEX idx_status (status),
-        INDEX idx_created_at (created_at)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-    `);
-    console.log('✅ Created table: conversion_tasks');
-
-    await connection.execute(`
-      CREATE TABLE IF NOT EXISTS batch_tasks (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        user_id INT NOT NULL,
-        total_images INT DEFAULT 0,
-        completed_images INT DEFAULT 0,
-        failed_images INT DEFAULT 0,
-        style_type ENUM('preset', 'custom', 'reference') DEFAULT 'preset',
-        style_preset VARCHAR(100),
-        style_description TEXT,
-        reference_image_url TEXT,
-        api_provider ENUM('volcengine', 'replicate', 'gemini', 'seedream', 'nanoBanana') DEFAULT 'volcengine',
-        status ENUM('pending', 'processing', 'completed', 'failed') DEFAULT 'pending',
-        total_cost DECIMAL(10, 4) DEFAULT 0,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-        INDEX idx_user_id (user_id),
-        INDEX idx_status (status),
-        INDEX idx_created_at (created_at)
+        INDEX idx_created_at (createdAt)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
     console.log('✅ Created table: batch_tasks');
+
+    await connection.execute(`
+      CREATE TABLE conversion_tasks (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        userId INT NOT NULL,
+        batchTaskId INT NULL,
+        originalImageUrl TEXT NOT NULL,
+        originalImageKey VARCHAR(500) NOT NULL,
+        originalFileName VARCHAR(255) NOT NULL,
+        styleType ENUM('preset', 'custom', 'reference') NOT NULL,
+        stylePreset VARCHAR(100),
+        styleDescription TEXT,
+        referenceImageUrl TEXT,
+        referenceImageKey VARCHAR(500),
+        strength FLOAT DEFAULT 0.75 NOT NULL,
+        preserveTransparency INT DEFAULT 0 NOT NULL,
+        originalWidth INT,
+        originalHeight INT,
+        status ENUM('pending', 'processing', 'completed', 'failed') DEFAULT 'pending' NOT NULL,
+        errorMessage TEXT,
+        resultImageUrl TEXT,
+        resultImageKey VARCHAR(500),
+        resultWidth INT,
+        resultHeight INT,
+        apiProvider ENUM('volcengine', 'replicate', 'gemini', 'seedream', 'nanoBanana') DEFAULT 'volcengine' NOT NULL,
+        costAmount DECIMAL(10, 4) DEFAULT 0 NOT NULL,
+        processingTime INT,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+        FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (batchTaskId) REFERENCES batch_tasks(id) ON DELETE SET NULL,
+        INDEX idx_user_id (userId),
+        INDEX idx_batch_task_id (batchTaskId),
+        INDEX idx_status (status),
+        INDEX idx_created_at (createdAt)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+    console.log('✅ Created table: conversion_tasks');
 
     await connection.end();
     console.log('🎉 Migration completed successfully!');
