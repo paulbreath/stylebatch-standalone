@@ -37,14 +37,14 @@ async function createAdmin() {
     } else {
       // Insert admin user
       const [result] = await connection.execute(
-        'INSERT INTO users (email, password, name, role, login_method) VALUES (?, ?, ?, ?, ?)',
-        [email, hashedPassword, name, 'admin', 'email']
+        'INSERT INTO users (email, password, name, role) VALUES (?, ?, ?, ?)',
+        [email, hashedPassword, name, 'admin']
       );
       console.log('✅ Admin user created with ID:', result.insertId);
 
       // Create user quota
       await connection.execute(
-        'INSERT INTO user_quotas (user_id, membership_type, total_quota, used_quota, remaining_quota) VALUES (?, ?, ?, ?, ?)',
+        'INSERT INTO user_quotas (userId, membershipType, totalQuota, usedQuota, remainingQuota) VALUES (?, ?, ?, ?, ?)',
         [result.insertId, 'enterprise', 999999, 0, 999999]
       );
       console.log('✅ Admin quota created (999999 conversions)');
