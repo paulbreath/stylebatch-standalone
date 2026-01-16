@@ -42,6 +42,9 @@ export async function verifyToken(token: string): Promise<JWTPayload | null> {
  * 用户注册
  */
 export async function register(email: string, password: string, name?: string) {
+  if (!db) {
+    throw new Error('Database not available. Please configure DATABASE_URL.');
+  }
   // 检查邮箱是否已存在
   const existingUser = await db.select().from(users).where(eq(users.email, email)).limit(1);
   if (existingUser.length > 0) {
@@ -90,6 +93,9 @@ export async function register(email: string, password: string, name?: string) {
  * 用户登录
  */
 export async function login(email: string, password: string) {
+  if (!db) {
+    throw new Error('Database not available. Please configure DATABASE_URL.');
+  }
   // 查找用户
   const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
   if (!user) {
@@ -132,6 +138,10 @@ export async function getUserFromToken(token: string) {
   const payload = await verifyToken(token);
   if (!payload) {
     return null;
+  }
+
+  if (!db) {
+    throw new Error('Database not available. Please configure DATABASE_URL.');
   }
 
   const [user] = await db.select().from(users).where(eq(users.id, payload.userId)).limit(1);

@@ -4,11 +4,20 @@ import { InsertUser, users, conversionTasks, InsertConversionTask, ConversionTas
 import { ENV } from './_core/env';
 
 // Initialize database connection
-if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL environment variable is required");
+let db: ReturnType<typeof drizzle> | null = null;
+
+if (process.env.DATABASE_URL) {
+  try {
+    db = drizzle(process.env.DATABASE_URL);
+    console.log("[Database] Connected successfully");
+  } catch (error) {
+    console.error("[Database] Failed to connect:", error);
+  }
+} else {
+  console.warn("[Database] DATABASE_URL not set. Database features will be unavailable.");
 }
 
-export const db = drizzle(process.env.DATABASE_URL);
+export { db };
 
 let _db: ReturnType<typeof drizzle> | null = db;
 
