@@ -3,7 +3,14 @@ import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users, conversionTasks, InsertConversionTask, ConversionTask, batchTasks, InsertBatchTask, BatchTask, userQuotas, UserQuota, InsertUserQuota } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
-let _db: ReturnType<typeof drizzle> | null = null;
+// Initialize database connection
+if (!process.env.DATABASE_URL) {
+  throw new Error("DATABASE_URL environment variable is required");
+}
+
+export const db = drizzle(process.env.DATABASE_URL);
+
+let _db: ReturnType<typeof drizzle> | null = db;
 
 // Lazily create the drizzle instance so local tooling can run without a DB.
 export async function getDb() {
