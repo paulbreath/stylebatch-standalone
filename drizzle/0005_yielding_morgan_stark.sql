@@ -1,0 +1,1 @@
+ALTER TABLE `batch_tasks` ADD `analyzeFirst` int DEFAULT 0 NOT NULL;

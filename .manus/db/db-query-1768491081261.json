@@ -1,0 +1,25 @@
+{
+  "query": "\n-- 先查看是否已有额度记录\nSELECT * FROM user_quotas WHERE userId = 1;\n\n-- 如果没有记录，插入企业版额度\nINSERT INTO user_quotas (userId, membershipType, totalQuota, usedQuota, remainingQuota, addonQuota, lifetimeUsage)\nVALUES (1, 'enterprise', 999999, 0, 999999, 0, 0)\nON DUPLICATE KEY UPDATE\n  membershipType = 'enterprise',\n  totalQuota = 999999,\n  remainingQuota = 999999,\n  membershipExpireAt = NULL;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3zzYTewqtRZ32Z6.192cffbf9e49 --database ktN2sJpQsNHtTozRwVDVah --execute \n-- 先查看是否已有额度记录\nSELECT * FROM user_quotas WHERE userId = 1;\n\n-- 如果没有记录，插入企业版额度\nINSERT INTO user_quotas (userId, membershipType, totalQuota, usedQuota, remainingQuota, addonQuota, lifetimeUsage)\nVALUES (1, 'enterprise', 999999, 0, 999999, 0, 0)\nON DUPLICATE KEY UPDATE\n  membershipType = 'enterprise',\n  totalQuota = 999999,\n  remainingQuota = 999999,\n  membershipExpireAt = NULL;\n",
+  "rows": [
+    {
+      "id": "1",
+      "userId": "1",
+      "membershipType": "free",
+      "membershipExpireAt": "NULL",
+      "totalQuota": "5",
+      "usedQuota": "0",
+      "remainingQuota": "5",
+      "addonQuota": "0",
+      "addonExpireAt": "NULL",
+      "lastResetAt": "2026-01-15 15:29:53",
+      "lifetimeUsage": "0",
+      "createdAt": "2026-01-15 15:29:53",
+      "updatedAt": "2026-01-15 15:29:53"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tuserId\tmembershipType\tmembershipExpireAt\ttotalQuota\tusedQuota\tremainingQuota\taddonQuota\taddonExpireAt\tlastResetAt\tlifetimeUsage\tcreatedAt\tupdatedAt\n1\t1\tfree\tNULL\t5\t0\t5\t0\tNULL\t2026-01-15 15:29:53\t0\t2026-01-15 15:29:53\t2026-01-15 15:29:53\n",
+  "stderr": "",
+  "execution_time_ms": 63
+}

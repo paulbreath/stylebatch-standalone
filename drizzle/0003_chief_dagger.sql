@@ -1,0 +1,1 @@
+ALTER TABLE `conversion_tasks` ADD `batchTaskId` int;
