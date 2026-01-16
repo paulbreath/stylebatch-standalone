@@ -1,6 +1,5 @@
 import "dotenv/config";
 import express from "express";
-import cookieParser from "cookie-parser";
 import { createServer } from "http";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
@@ -34,7 +33,19 @@ async function startServer() {
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
-  app.use(cookieParser());
+  
+  // Manual cookie parser middleware
+  app.use((req, res, next) => {
+    req.cookies = {};
+    const cookieHeader = req.headers.cookie;
+    if (cookieHeader) {
+      cookieHeader.split(';').forEach(cookie => {
+        const [name, ...rest] = cookie.split('=');
+        req.cookies[name.trim()] = rest.join('=').trim();
+      });
+    }
+    next();
+  });
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
   // tRPC API
