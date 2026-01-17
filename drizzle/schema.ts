@@ -5,9 +5,11 @@ import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, float, tinyint } 
  */
 export const users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(),
+  openId: varchar("openId", { length: 255 }).unique(), // OAuth openId (可选，本地登录时为 null)
   email: varchar("email", { length: 320 }).notNull().unique(),
-  password: varchar("password", { length: 255 }).notNull(), // bcrypt 加密后的密码
+  password: varchar("password", { length: 255 }), // bcrypt 加密后的密码（OAuth 登录时为 null）
   name: text("name"),
+  loginMethod: mysqlEnum("loginMethod", ["local", "oauth"]).default("local").notNull(), // 登录方式
   role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),

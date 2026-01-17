@@ -25,14 +25,17 @@ async function migrate() {
     await connection.execute(`
       CREATE TABLE users (
         id INT AUTO_INCREMENT PRIMARY KEY,
+        openId VARCHAR(255) UNIQUE,
         email VARCHAR(320) UNIQUE NOT NULL,
-        password VARCHAR(255) NOT NULL,
+        password VARCHAR(255),
         name TEXT,
+        loginMethod ENUM('local', 'oauth') DEFAULT 'local' NOT NULL,
         role ENUM('user', 'admin') DEFAULT 'user' NOT NULL,
         createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
         updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
         lastSignedIn TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-        INDEX idx_email (email)
+        INDEX idx_email (email),
+        INDEX idx_openId (openId)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
     console.log('✅ Created table: users');
